@@ -2,7 +2,7 @@
 
 namespace Models;
 
-class Image extends Model implements HTMLGenerator {
+class Image implements Model, HTMLGenerator {
 
     private int $id;
     private string $url;

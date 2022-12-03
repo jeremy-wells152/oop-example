@@ -4,7 +4,7 @@ namespace Models;
 
 use \Connection\Database;
 
-abstract class Model {
+interface Model {
 
     /**
      * Requests data to be populated into the model.
