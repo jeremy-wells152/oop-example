@@ -1,19 +1,17 @@
 <?php
     require_once 'assets/php/static/autoload.php';
 
-    use \Models\Populator;
-    use \Models\Image;
-
-    $populator = new Populator();
+    use \Static\Environment;
 
     /**
      * @var Image[]
      */
     $images = [];
-    for ($i = 0; $i < SHOWPERPAGE; $i++) { // Statics should really only be at this level most of the time (the page level or the API endpoint level).
-        $img = new Image($i);
+    // Statics should really only be at this level most of the time (the page level or the API endpoint level).
+    // this includes methods and constants.
+    for ($i = 0; $i < SHOWPERPAGE; $i++) {
+        $img = Environment::getImage($i); 
         $images[] = $img;
-        $populator->registerModel($img);
     }
 
     $populator->populateModels();

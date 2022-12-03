@@ -23,16 +23,11 @@ class Populator {
      */
     private array $imageIds;
 
-    function __construct() {
-        $this->database = new Database('127.0.0.1', 0, 'root', 'verysecurepassword'); // i forgot the port and dont want to look it up
+    function __construct(Database $database) {
+        $this->database = $database;
         $this->database->connect();
         $this->models = [];
         $this->imageIds = [];
-    }
-
-    public function registerModel(Model $model) : void {
-        $this->models[] = $model;
-        $model->request($this);
     }
 
     // Imagine a form of get_products but it will get ALL the required data for the site at this single level. So it's
@@ -45,23 +40,31 @@ class Populator {
     public function populateModels() : void {
         $set = Database::questionMarks(count($this->imageIds));
         $dts = str_repeat('i', count($this->imageIds));
+
+        // Retrieve images.
+        $results = $this->database->select(<<<SQL
+            SELECT `id`, `url`, `rating`
+            FROM `images`
+            WHERE id IN {$set}
+        SQL, $this->imageIds, $dts);
+
+        /**
+         * @var Image[]
+         */
+        $images = [];
+        while (count($images) > 0) {
+            $result = array_shift($results);
+            $images[Image::getUniqueIdPrefix() . $result['id']] = new Image($this, $result['id'], $result['url'], $result['rating']);
+        }
+
+        // Now go through the register models and hand out the objects we created.
         foreach ($this->models as $model) {
-            // Retrieve image IDS.
-            $results = $this->database->select(<<<SQL
-                SELECT `id`, `url`, `rating`
-                FROM `images`
-                WHERE id IN {$set}
-            SQL, $this->imageIds, $dts);
-
-            foreach ($results as $result) {
-                $model->populate(new Image($result['id'], $result['url'], $result['rating']));
-            }
-
-            // We can add further abstraction as needed to optimize and make things as efficient as possible....
+            $model->populate($images[$model->getUniqueId()]);
         }
     }
 
-    public function requestImage(int $id) : void {
-        $imageIds[] = $id;
+    public function requestImage(Model $model, int $id) : void {
+        $this->models[] = $model;
+        $this->imageIds[] = $id;
     }
 }
